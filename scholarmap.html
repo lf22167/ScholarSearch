@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NZ Scholarship Map</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#0f1923;--surface:#162030;--surface2:#1d2a3a;--border:#2a3a4a;--text:#e8f0f8;--muted:#7a9ab5;--accent:#f5c842;--school:#4dd08a;--university:#5aabff;--company:#ff8c5a;--org:#c97fff;--danger:#ff5f5f;--r:10px;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:1000;}
+    .logo{display:flex;align-items:center;gap:9px;}
+    .logo-icon{width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+    .logo h1{font-family:'Playfair Display',serif;font-size:1.25rem;}
+    .logo span{color:var(--accent);}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;}
+    .li{display:flex;align-items:center;gap:5px;font-size:0.76rem;color:var(--muted);}
+    .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+    .hint{font-size:0.76rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:5px 12px;border-radius:20px;}
+    .main{display:flex;flex:1;overflow:hidden;}
+    .sidebar{width:360px;min-width:280px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+    .sb-top{padding:12px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .sb-top h2{font-size:0.8rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+    .total-badge{background:var(--accent);color:#000;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;}
+    .search-wrap{padding:8px 12px;border-bottom:1px solid var(--border);}
+    .search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.84rem;padding:7px 11px;outline:none;transition:border-color .15s;}
+    .search-wrap input:focus{border-color:var(--accent);}
+    .search-wrap input::placeholder{color:var(--muted);}
+    .filters-panel{border-bottom:1px solid var(--border);flex-shrink:0;}
+    .filters-toggle{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+    .filters-toggle:hover{background:var(--surface2);}
+    .ftog-left{display:flex;align-items:center;gap:8px;font-size:0.82rem;font-weight:600;}
+    .ftog-right{display:flex;align-items:center;gap:8px;}
+    .active-pill{background:var(--accent);color:#000;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:20px;display:none;}
+    .active-pill.show{display:inline-block;}
+    .fchev{font-size:0.68rem;color:var(--muted);transition:transform .2s;display:inline-block;}
+    .fchev.open{transform:rotate(90deg);}
+    .filters-body{overflow:hidden;max-height:0;transition:max-height .3s ease;}
+    .filters-body.open{max-height:1400px;}
+    .filters-inner{padding:10px 12px 12px;}
+    .fgroup{margin-bottom:11px;}
+    .fgroup:last-child{margin-bottom:0;}
+    .fglabel{font-size:0.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;}
+    .chips{display:flex;flex-wrap:wrap;gap:4px;}
+    .chip{padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;}
+    .chip:hover{color:var(--text);border-color:var(--muted);}
+    .chip.on{color:#000!important;border-color:transparent;}
+    .chip.on.c-school{background:var(--school);}
+    .chip.on.c-university{background:var(--university);}
+    .chip.on.c-company{background:var(--company);}
+    .chip.on.c-org{background:var(--org);}
+    .chip.on.c-undergrad{background:#5aabff;}
+    .chip.on.c-postgrad{background:#ff8c5a;}
+    .chip.on.c-phd{background:#ff6b9d;}
+    .chip.on.c-trades{background:#ffe066;}
+    .chip.on.c-intl{background:#e272ff;}
+    .chip.on.c-domestic{background:#4de8c0;}
+    .chip.on.c-maori{background:#ff6b6b;}
+    .chip.on.c-pasifika{background:#ffa94d;}
+    .chip.on.c-asian{background:#74c0fc;}
+    .chip.on.c-open{background:#aaa;}
+    .chip.on.c-women{background:#f783ac;}
+    .chip.on.c-open-gender{background:#aaa;}
+    .chip.on.c-stem{background:#69db7c;}
+    .chip.on.c-health{background:#38d9a9;}
+    .chip.on.c-business{background:#fcc419;}
+    .chip.on.c-law{background:#a9e34b;}
+    .chip.on.c-arts{background:#da77f2;}
+    .chip.on.c-education{background:#4dabf7;}
+    .chip.on.c-environment{background:#63e6be;}
+    .chip.on.c-trades-field{background:#ffd43b;}
+    .chip.on.c-any{background:#bbb;}
+    .chip.on.c-full{background:#51cf66;}
+    .chip.on.c-partial{background:#94d82d;}
+    .chip.on.c-north{background:#a3e05a;}
+    .chip.on.c-south{background:#5ae0d0;}
+    .filter-footer{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);}
+    .vis-count{font-size:0.72rem;color:var(--muted);}
+    .vis-count span{color:var(--accent);font-weight:600;}
+    .clear-btn{font-size:0.72rem;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;padding:0;transition:color .15s;}
+    .clear-btn:hover{color:var(--accent);}
+    .sections-scroll{flex:1;overflow-y:auto;}
+    .sections-scroll::-webkit-scrollbar{width:4px;}
+    .sections-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    .sec-head{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;user-select:none;}
+    .sec-head:hover{background:var(--surface2);}
+    .sec-left{display:flex;align-items:center;gap:9px;}
+    .sec-name{font-size:0.86rem;font-weight:600;}
+    .sec-cnt{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:20px;color:#000;}
+    .sec-cnt.school{background:var(--school);}
+    .sec-cnt.university{background:var(--university);}
+    .sec-cnt.company{background:var(--company);}
+    .sec-cnt.org{background:var(--org);}
+    .sec-chev{font-size:0.68rem;color:var(--muted);transition:transform .2s;display:inline-block;}
+    .sec-chev.open{transform:rotate(90deg);}
+    .sec-body{overflow:hidden;max-height:0;transition:max-height .35s ease;}
+    .sec-body.open{max-height:3000px;}
+    .cards-wrap{padding:6px 10px 8px;overflow-y:auto;max-height:320px;}
+    .cards-wrap::-webkit-scrollbar{width:4px;}
+    .cards-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    .card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 11px;margin-bottom:6px;cursor:pointer;transition:all .16s;position:relative;overflow:hidden;}
+    .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+    .card.school::before{background:var(--school);}
+    .card.university::before{background:var(--university);}
+    .card.company::before{background:var(--company);}
+    .card.org::before{background:var(--org);}
+    .card:hover{border-color:var(--accent);transform:translateX(2px);}
+    .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:2px;}
+    .card-name{font-weight:600;font-size:0.84rem;line-height:1.3;}
+    .card-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.82rem;padding:0;line-height:1;flex-shrink:0;transition:color .15s;}
+    .card-del:hover{color:var(--danger);}
+    .card-schname{font-size:0.78rem;color:var(--text);margin-bottom:2px;}
+    .card-amount{font-size:0.88rem;font-weight:700;color:var(--accent);margin-bottom:3px;}
+    .card-desc{font-size:0.72rem;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .card-loc{font-size:0.68rem;color:var(--muted);margin-top:4px;}
+    .card-link{font-size:0.7rem;color:var(--accent);text-decoration:none;display:inline-block;margin-top:3px;}
+    .card-link:hover{text-decoration:underline;}
+    .tags{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0;}
+    .tag{display:inline-block;font-size:0.6rem;font-weight:600;padding:1px 5px;border-radius:8px;}
+    .no-results{text-align:center;padding:14px 0;font-size:0.76rem;color:var(--muted);}
+    .add-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;border-radius:8px;background:transparent;border:1px dashed var(--border);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.78rem;cursor:pointer;transition:all .15s;margin-top:2px;}
+    .add-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(245,200,66,0.05);}
+    #map{flex:1;cursor:crosshair;}
+    .leaflet-pane{z-index:1;}
+    .leaflet-top,.leaflet-bottom{z-index:100;}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .overlay.open{opacity:1;pointer-events:all;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:24px;transform:translateY(14px);transition:transform .25s;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+    .overlay.open .modal{transform:translateY(0);}
+    .modal h3{font-family:'Playfair Display',serif;font-size:1.15rem;margin-bottom:4px;}
+    .modal-sub{font-size:0.78rem;color:var(--muted);margin-bottom:18px;}
+    .fg{margin-bottom:13px;}
+    label{display:block;font-size:0.73rem;font-weight:500;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
+    input,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.86rem;padding:8px 11px;outline:none;transition:border-color .15s;}
+    input:focus,textarea:focus{border-color:var(--accent);}
+    textarea{resize:vertical;min-height:60px;}
+    .type-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;}
+    .tbtn{padding:8px 4px;border-radius:8px;border:2px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.7rem;font-weight:600;cursor:pointer;text-align:center;transition:all .16s;}
+    .tbtn .te{display:block;font-size:1.1rem;margin-bottom:2px;}
+    .tbtn.sel.school{border-color:var(--school);background:rgba(77,208,138,0.1);color:var(--school);}
+    .tbtn.sel.university{border-color:var(--university);background:rgba(90,171,255,0.1);color:var(--university);}
+    .tbtn.sel.company{border-color:var(--company);background:rgba(255,140,90,0.1);color:var(--company);}
+    .tbtn.sel.org{border-color:var(--org);background:rgba(201,127,255,0.1);color:var(--org);}
+    .mactions{display:flex;gap:8px;margin-top:18px;}
+    .btn{flex:1;padding:9px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.86rem;font-weight:600;cursor:pointer;border:none;transition:all .16s;}
+    .btn-p{background:var(--accent);color:#000;}
+    .btn-p:hover{opacity:.88;}
+    .btn-s{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+    .btn-s:hover{color:var(--text);}
+    .toast{position:fixed;bottom:18px;right:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:9px 15px;border-radius:8px;font-size:0.8rem;z-index:99999;transform:translateY(50px);opacity:0;transition:all .25s;pointer-events:none;}
+    .toast.show{transform:translateY(0);opacity:1;}
+    @media(max-width:700px){.sidebar{display:none;}.legend{display:none;}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <h1>NZ <span>ScholarMap</span></h1>
+  </div>
+  <div class="legend">
+    <div class="li"><div class="dot" style="background:var(--school)"></div>School</div>
+    <div class="li"><div class="dot" style="background:var(--university)"></div>University</div>
+    <div class="li"><div class="dot" style="background:var(--company)"></div>Company</div>
+    <div class="li"><div class="dot" style="background:var(--org)"></div>Organisation</div>
+  </div>
+  <div class="hint">📍 Click map to add a scholarship</div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <h2>All Scholarships</h2>
+      <span class="total-badge" id="totalBadge">0</span>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="searchBox" placeholder="🔍  Search by name, provider, amount..." oninput="renderAll()"/>
+    </div>
+
+    <div class="filters-panel">
+      <div class="filters-toggle" onclick="toggleFP()">
+        <div class="ftog-left">🎛️ Filters</div>
+        <div class="ftog-right">
+          <span class="active-pill" id="activePill">0 active</span>
+          <span class="fchev open" id="fchev">▶</span>
+        </div>
+      </div>
+      <div class="filters-body open" id="filtersBody">
+        <div class="filters-inner">
+          <div class="fgroup"><div class="fglabel">📂 Category</div><div class="chips" id="chips-category"></div></div>
+          <div class="fgroup"><div class="fglabel">🎯 Study Level</div><div class="chips" id="chips-level"></div></div>
+          <div class="fgroup"><div class="fglabel">🌏 Eligibility</div><div class="chips" id="chips-eligibility"></div></div>
+          <div class="fgroup"><div class="fglabel">🪶 Ethnicity</div><div class="chips" id="chips-ethnicity"></div></div>
+          <div class="fgroup"><div class="fglabel">⚥ Gender</div><div class="chips" id="chips-gender"></div></div>
+          <div class="fgroup"><div class="fglabel">📚 Field of Study</div><div class="chips" id="chips-field"></div></div>
+          <div class="fgroup"><div class="fglabel">💰 Funding Type</div><div class="chips" id="chips-funding"></div></div>
+          <div class="fgroup"><div class="fglabel">📍 Island</div><div class="chips" id="chips-island"></div></div>
+          <div class="filter-footer">
+            <div class="vis-count">Showing <span id="visibleCount">0</span> scholarships</div>
+            <button class="clear-btn" onclick="clearFilters()">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sections-scroll" id="sectionsScroll"></div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>📍 Add Scholarship</h3>
+    <p class="modal-sub" id="msub"></p>
+    <div class="fg">
+      <label>Provider Type</label>
+      <div class="type-grid">
+        <button class="tbtn sel school" onclick="selType('school',this)"><span class="te">🏫</span>School</button>
+        <button class="tbtn" onclick="selType('university',this)"><span class="te">🎓</span>University</button>
+        <button class="tbtn" onclick="selType('company',this)"><span class="te">🏢</span>Company</button>
+        <button class="tbtn" onclick="selType('org',this)"><span class="te">🌐</span>Organisation</button>
+      </div>
+    </div>
+    <div class="fg"><label>Provider Name *</label><input id="fProvider" placeholder="e.g. University of Auckland, Fonterra"/></div>
+    <div class="fg"><label>Scholarship Name *</label><input id="fName" placeholder="e.g. International Excellence Award"/></div>
+    <div class="fg"><label>Amount / Value</label><input id="fAmount" placeholder="e.g. NZD $10,000 / year or Full Tuition"/></div>
+    <div class="fg"><label>Description / Eligibility</label><textarea id="fDesc" placeholder="Who can apply? What is required?"></textarea></div>
+    <div class="fg"><label>Website Link (optional)</label><input type="url" id="fUrl" placeholder="https://..."/></div>
+    <div class="mactions">
+      <button class="btn btn-s" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveScholarship()">Save Scholarship</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BUILTIN=[
+  {id:'b1',type:'school',tags:['intl','undergrad','north','open','open-gender','any','partial'],provider:'Aorere College',name:'International Student Scholarship',amount:'25% off tuition (Yr 1)',desc:'For international students with strong academic performance. High achievers may receive 35% off in subsequent years.',url:'https://www.aorere.school.nz',lat:-36.982,lng:174.832,builtin:true},
+  {id:'b2',type:'school',tags:['intl','undergrad','north','open','open-gender','any','partial'],provider:'Avondale College',name:'Academic Excellence Scholarship',amount:'25% off tuition',desc:'Two scholarships for high-achieving international students with good academic record and conduct.',url:'https://www.avondale.school.nz',lat:-36.905,lng:174.717,builtin:true},
+  {id:'b3',type:'school',tags:['intl','undergrad','north','open','open-gender','any','partial'],provider:'Awatapu College (Palmerston North)',name:'First-Year Tuition Scholarship',amount:'NZD $2,400',desc:'Five scholarships for first-year tuition fees. Outstanding results may lead to renewal.',url:'https://www.awatapu.school.nz',lat:-40.353,lng:175.610,builtin:true},
+  {id:'b4',type:'school',tags:['domestic','undergrad','north','open','open-gender','education','partial'],provider:'TeachNZ / Ministry of Education',name:'Te Huarau Scholarship',amount:'NZD $10,000 + course fees',desc:'Encourages school leavers to train as teachers in areas of greatest need. Applications close 31 August annually.',url:'https://teachnz.govt.nz',lat:-41.286,lng:174.776,builtin:true},
+  {id:'b5',type:'university',tags:['intl','undergrad','north','open','open-gender','any','partial'],provider:'University of Auckland',name:'International Student Excellence Scholarship',amount:'Up to NZD $10,000',desc:'For high-achieving international students enrolling at undergraduate level. Applications open July–September.',url:'https://www.auckland.ac.nz/en/study/scholarships-and-awards.html',lat:-36.852,lng:174.768,builtin:true},
+  {id:'b6',type:'university',tags:['domestic','undergrad','north','open','open-gender','arts','partial'],provider:'University of Auckland',name:'Taurus Music Trust Scholarship',amount:'NZD $4,000',desc:'Up to 2 scholarships for school leavers enrolling full-time in a Bachelor of Music at the University of Auckland.',url:'https://www.auckland.ac.nz/en/study/scholarships-and-awards.html',lat:-36.853,lng:174.770,builtin:true},
+  {id:'b7',type:'university',tags:['intl','undergrad','postgrad','north','open','open-gender','any','partial'],provider:'Auckland University of Technology (AUT)',name:'AUT International Scholarship',amount:'Up to NZD $10,000',desc:'For international undergraduate and postgraduate students. Up to 50 scholarships awarded annually over 2 years.',url:'https://www.aut.ac.nz/study/fees-and-scholarships/scholarships-and-awards-at-aut',lat:-36.854,lng:174.766,builtin:true},
+  {id:'b8',type:'university',tags:['intl','undergrad','postgrad','north','open','open-gender','any','partial'],provider:'University of Waikato',name:'International Excellence Scholarship',amount:'Up to NZD $15,000',desc:'Merit-based award for international students at all study levels including NCUK University of Waikato Bursary.',url:'https://www.waikato.ac.nz/study/scholarships/',lat:-37.787,lng:175.319,builtin:true},
+  {id:'b9',type:'university',tags:['intl','domestic','phd','north','open','open-gender','any','full'],provider:'Massey University',name:'Massey Doctoral Scholarship',amount:'Tuition + living stipend',desc:'For both domestic and international PhD students across all campuses (Auckland, Wellington, Palmerston North).',url:'https://www.massey.ac.nz/study/scholarships-and-awards/',lat:-40.356,lng:175.609,builtin:true},
+  {id:'b10',type:'university',tags:['intl','domestic','phd','north','open','open-gender','any','full'],provider:'Victoria University of Wellington',name:'VUW Doctoral Scholarship',amount:'Tuition + living allowance',desc:'Fully funded doctoral scholarships for domestic and international students. Merit-based selection.',url:'https://www.wgtn.ac.nz/scholarships',lat:-41.290,lng:174.768,builtin:true},
+  {id:'b11',type:'university',tags:['intl','undergrad','postgrad','south','open','open-gender','any','partial'],provider:'University of Canterbury',name:'UC International Scholarship',amount:'NZD $5,000 – $10,000',desc:'Range of scholarships for international students at undergraduate and postgraduate levels.',url:'https://www.canterbury.ac.nz/study/scholarships/',lat:-43.522,lng:172.580,builtin:true},
+  {id:'b12',type:'university',tags:['intl','postgrad','south','open','open-gender','any','partial'],provider:'Lincoln University',name:'International Taught Master Merit Scholarship',amount:'NZD $5,000 – $10,000',desc:'Automatic merit-based scholarships for international students with strong GPA in Master\'s programmes.',url:'https://www.lincoln.ac.nz/study/scholarships/',lat:-43.645,lng:172.469,builtin:true},
+  {id:'b13',type:'university',tags:['intl','undergrad','south','open','open-gender','any','partial'],provider:'University of Otago',name:"Vice-Chancellor's International Scholarship",amount:'NZD $10,000 (first year)',desc:"Automatic scholarship for first year of Bachelor's programmes. Combinable with other awards up to NZD $50,000.",url:'https://www.otago.ac.nz/study/scholarships',lat:-45.866,lng:170.514,builtin:true},
+  {id:'b14',type:'university',tags:['intl','domestic','phd','south','open','open-gender','any','full'],provider:'University of Otago',name:'Doctoral Scholarship',amount:'NZD $32,544/yr + fees waiver',desc:'Up to 180 doctoral awards annually. Includes living stipend and domestic tuition fee waiver for 36 months.',url:'https://www.otago.ac.nz/study/scholarships',lat:-45.867,lng:170.516,builtin:true},
+  {id:'b15',type:'university',tags:['domestic','undergrad','postgrad','north','maori','open-gender','any','partial'],provider:'Māori Education Trust (Toitū Kaupapa)',name:'Māori Education Trust Scholarship',amount:'Varies by application',desc:'Financial assistance for Māori students undertaking tertiary study in any field at any NZ institution.',url:'https://www.maorieducation.org.nz',lat:-36.860,lng:174.760,builtin:true},
+  {id:'b16',type:'university',tags:['domestic','undergrad','postgrad','phd','south','maori','open-gender','any','partial'],provider:'Te Rūnanga o Ngāi Tahu',name:"Kā Pūtea Scholarships",amount:'Varies (tertiary + exceptional awards)',desc:'Tertiary and exceptional scholarships for Ngāi Tahu iwi members. Covers undergraduate through doctoral study.',url:'https://ngaitahu.iwi.nz/our-people/nga-putea/',lat:-43.530,lng:172.620,builtin:true},
+  {id:'b17',type:'university',tags:['domestic','undergrad','postgrad','north','maori','women','business','partial'],provider:'University of Auckland',name:'Ngā Ara Whetū – Wāhine Māori Scholarship',amount:'Up to NZD $15,000',desc:'Supports high-achieving wāhine Māori enrolled in the Business School. Covers tuition and living costs.',url:'https://www.auckland.ac.nz/en/study/scholarships-and-awards.html',lat:-36.855,lng:174.771,builtin:true},
+  {id:'b18',type:'university',tags:['intl','domestic','postgrad','phd','north','pasifika','open-gender','health','full'],provider:'University of Auckland',name:'Pacific Doctoral Scholarship',amount:'Up to NZD $35,468/yr + fees',desc:'For high-achieving Pacific students enrolled in doctoral study. Includes stipend, tuition fees and insurance.',url:'https://www.auckland.ac.nz/en/study/scholarships-and-awards/scholarship-types/scholarships-for-pacific-students.html',lat:-36.856,lng:174.769,builtin:true},
+  {id:'b19',type:'university',tags:['domestic','undergrad','north','pasifika','maori','open-gender','stem','partial'],provider:'University of Auckland',name:'Pacific & Māori BSc Scholarship',amount:'Up to NZD $5,000',desc:'Supports an undergraduate Māori or Pacific student enrolling in a Bachelor of Science at the University of Auckland.',url:'https://www.auckland.ac.nz/en/study/scholarships-and-awards/scholarship-types/scholarships-for-pacific-students.html',lat:-36.857,lng:174.767,builtin:true},
+  {id:'b20',type:'company',tags:['domestic','undergrad','north','pasifika','open-gender','stem','partial'],provider:'Fonterra x Massey University',name:'Fonterra Pacific Undergraduate Scholarship',amount:'Up to NZD $65,000 (4 years)',desc:'For first-year Pacific students in a full-time undergraduate science or technology degree at Massey. Includes paid summer internship.',url:'https://www.massey.ac.nz/study/scholarships-and-awards/fonterra-pacific-undergraduate-scholarship/',lat:-40.360,lng:175.614,builtin:true},
+  {id:'b21',type:'company',tags:['domestic','undergrad','north','open','open-gender','stem','partial'],provider:'Spark New Zealand Foundation',name:'Spark Foundation Digital Education Grant',amount:'Varies',desc:'Supports digital equity and youth education initiatives across NZ. Focus on technology access for underserved communities.',url:'https://www.spark.co.nz/about/spark-foundation/',lat:-36.844,lng:174.767,builtin:true},
+  {id:'b22',type:'company',tags:['domestic','undergrad','north','open','open-gender','stem','partial'],provider:'Air New Zealand',name:'STEM & Engineering Scholarship Support',amount:'Varies',desc:'Supports scholarships in engineering and technical fields to develop local aviation talent.',url:'https://www.airnewzealand.co.nz/careers',lat:-36.993,lng:174.785,builtin:true},
+  {id:'b23',type:'company',tags:['domestic','undergrad','postgrad','north','open','women','stem','partial'],provider:'GCSB (Govt Communications Security Bureau)',name:'Women in STEM Scholarship',amount:'NZD $10,000',desc:'Encourages women to pursue STEM careers in NZ. Computer science, cyber security, maths, or data science. Closes 1 October.',url:'https://www.gcsb.govt.nz/careers/scholarships/',lat:-41.279,lng:174.777,builtin:true},
+  {id:'b24',type:'company',tags:['domestic','undergrad','postgrad','north','open','open-gender','environment','partial'],provider:'Fisheries New Zealand (MPI)',name:'Fisheries NZ Scholarship',amount:'Up to NZD $20,000/yr',desc:'Partial funding for NZ students in fisheries, marine science, or resource management degrees. Applications close 31 October.',url:'https://www.mpi.govt.nz/funding-and-programmes/scholarships/',lat:-41.282,lng:174.778,builtin:true},
+  {id:'b25',type:'company',tags:['domestic','trades','north','maori','pasifika','open-gender','trades-field','partial'],provider:'Manukau Institute of Technology (MIT)',name:'Māori & Pasifika Trades Training Scholarship',amount:'Free tuition fees (up to 1 year)',desc:'For NZ Māori and Pasifika aged 16–40. Free fees for Level 3–4 trade qualifications including automotive, construction and hospitality.',url:'https://www.manukau.ac.nz/study/free-study/maori-pasifika-trades-training/',lat:-36.998,lng:174.860,builtin:true},
+  {id:'b26',type:'org',tags:['intl','postgrad','phd','north','open','open-gender','any','full'],provider:'Education New Zealand – Manaaki NZ',name:'Manaaki New Zealand Scholarship',amount:'Full tuition + living + travel',desc:'Fully funded postgraduate scholarships (Masters & PhD) for international students from eligible partner countries. Applications open 1–31 March.',url:'https://www.nzscholarships.govt.nz',lat:-41.289,lng:174.773,builtin:true},
+  {id:'b27',type:'org',tags:['intl','undergrad','north','open','open-gender','any','partial'],provider:'Universities New Zealand – Te Pōkai Tara',name:'NZ Universities Awards (NZUA)',amount:'NZD $15,000 each (45 available)',desc:'Government-funded awards for eligible international undergraduate students at all 8 NZ public universities.',url:'https://www.universitiesnz.ac.nz/scholarships',lat:-41.287,lng:174.775,builtin:true},
+  {id:'b28',type:'org',tags:['domestic','undergrad','postgrad','north','open','open-gender','any','partial'],provider:'Todd Foundation',name:'Community Education Grants',amount:'Varies (major multi-year grants)',desc:'Wellington-based philanthropic foundation since 1972. Funds community-led education, digital equity, housing, and Māori-led solutions.',url:'https://www.toddfoundation.org.nz',lat:-41.285,lng:174.780,builtin:true},
+  {id:'b29',type:'org',tags:['domestic','undergrad','north','open','open-gender','any','partial'],provider:'Lion Foundation',name:'Community Education Grants',amount:'Varies by application',desc:'Grants millions annually to NZ clubs, charities and community groups across health, education, sports, arts and culture.',url:'https://lionfoundation.nz',lat:-36.848,lng:174.763,builtin:true},
+  {id:'b30',type:'org',tags:['domestic','undergrad','postgrad','north','open','open-gender','any','partial'],provider:'Tindall Foundation',name:'Tindall Foundation Grants',amount:'Varies',desc:"One of NZ's largest private philanthropic foundations. Funds education, community wellbeing and youth development.",url:'https://www.tindall.org.nz',lat:-36.846,lng:174.765,builtin:true},
+  {id:'b31',type:'org',tags:['domestic','undergrad','postgrad','north','open','open-gender','any','partial'],provider:'J R McKenzie Trust',name:'JR McKenzie Education Grants',amount:'Varies',desc:'Family trust grantmaking since 1940. Funds groups often overlooked by other funders. Social justice and inclusive education focus.',url:'https://www.jrmckenzie.org.nz',lat:-41.283,lng:174.779,builtin:true},
+  {id:'b32',type:'org',tags:['domestic','undergrad','postgrad','north','pasifika','open-gender','health','partial'],provider:'Ministry of Health – Pacific Health',name:'Pacific Health Scholarships',amount:'Tuition fees covered',desc:'Open to NZ citizens and permanent residents of Pacific heritage pursuing health-related qualifications.',url:'https://www.health.govt.nz/pacific-health-scholarships',lat:-41.283,lng:174.774,builtin:true},
+  {id:'b33',type:'org',tags:['intl','domestic','postgrad','phd','north','maori','open-gender','any','full'],provider:'Ngā Pae o te Māramatanga',name:'Postgraduate Indigenous Research Scholarship',amount:'Full funding (fees + stipend)',desc:'Fully funded awards for postgraduate research focusing on Indigenous and Māori research areas.',url:'https://www.maramatanga.ac.nz',lat:-36.859,lng:174.762,builtin:true},
+  {id:'b34',type:'org',tags:['domestic','undergrad','postgrad','north','maori','pasifika','open-gender','stem','arts','partial'],provider:'Ministry for Pacific Peoples',name:'Toloa Tertiary Scholarships (STEAM)',amount:'Varies',desc:'Supports Pacific students to study science, technology, engineering, arts and maths subjects at a NZ tertiary institution.',url:'https://www.mpp.govt.nz/programmes/toloa/',lat:-41.280,lng:174.772,builtin:true},
+  {id:'b35',type:'org',tags:['domestic','undergrad','postgrad','north','maori','pasifika','open-gender','any','partial'],provider:'Te Wānanga o Aotearoa',name:'Wānanga Scholarships (Māori & Pasifika)',amount:'Up to NZD $5,000',desc:'Multiple scholarships for tauira Māori and Pasifika. Includes Mātauranga Māori and Kapa Haka scholarships.',url:'https://www.twoa.ac.nz/tauira-students/scholarships',lat:-37.786,lng:175.278,builtin:true},
+  {id:'b36',type:'org',tags:['domestic','undergrad','north','maori','open-gender','stem','partial'],provider:'Tūwharetoa Settlement Trust',name:'Tūwharetoa STEM Scholarship',amount:'NZD $10,000 each (3 available)',desc:'For registered Tūwharetoa members in third year+ studying STEM at university. Applications close 31 March.',url:'https://www.ngatiupoatrust.org.nz',lat:-38.687,lng:176.070,builtin:true},
+  {id:'b37',type:'org',tags:['domestic','undergrad','postgrad','north','pasifika','open-gender','any','partial'],provider:"Ministry for Pacific Peoples",name:"Prime Minister's Pacific Youth Awards",amount:'Recognition + prize fund',desc:'Awards in 8 categories for Pacific people aged 17–24 creating positive impact in their chosen field.',url:'https://www.mpp.govt.nz/programmes/prime-ministers-pacific-youth-awards/',lat:-41.281,lng:174.774,builtin:true},
+];
+
+let custom=JSON.parse(localStorage.getItem('nz_custom_v2')||'[]');
+const allItems=()=>[...BUILTIN,...custom];
+let pendingLL=null,selType_='school',markers={};
+let openSections={school:true,university:true,company:false,org:false};
+let fpOpen=true;
+let activeFilters={category:[],level:[],eligibility:[],ethnicity:[],gender:[],field:[],funding:[],island:[]};
+
+const FD={
+  category:[{v:'school',label:'🏫 Schools'},{v:'university',label:'🎓 Universities'},{v:'company',label:'🏢 Companies'},{v:'org',label:'🌐 Organisations'}],
+  level:[{v:'undergrad',label:'Undergraduate'},{v:'postgrad',label:'Postgraduate'},{v:'phd',label:'PhD / Doctoral'},{v:'trades',label:'Trades'}],
+  eligibility:[{v:'intl',label:'International'},{v:'domestic',label:'NZ / Domestic'}],
+  ethnicity:[{v:'maori',label:'🪶 Māori'},{v:'pasifika',label:'🌺 Pasifika'},{v:'asian',label:'🌏 Asian'},{v:'open',label:'All Ethnicities'}],
+  gender:[{v:'women',label:'♀ Women Only'},{v:'open-gender',label:'All Genders'}],
+  field:[{v:'stem',label:'🔬 STEM'},{v:'health',label:'🏥 Health'},{v:'business',label:'💼 Business'},{v:'law',label:'⚖️ Law'},{v:'arts',label:'🎨 Arts / Music'},{v:'education',label:'📖 Education'},{v:'environment',label:'🌿 Environment'},{v:'trades-field',label:'🔧 Trades'},{v:'any',label:'Any Field'}],
+  funding:[{v:'full',label:'💯 Fully Funded'},{v:'partial',label:'📊 Partial Funding'}],
+  island:[{v:'north',label:'🟢 North Island'},{v:'south',label:'🔵 South Island'}],
+};
+
+const SECS=[{key:'school',label:'Schools',emoji:'🏫'},{key:'university',label:'Universities',emoji:'🎓'},{key:'company',label:'Companies',emoji:'🏢'},{key:'org',label:'Organisations',emoji:'🌐'}];
+
+const TM={
+  intl:{bg:'rgba(226,114,255,0.2)',c:'#e272ff',b:'rgba(226,114,255,0.4)',l:'International'},
+  domestic:{bg:'rgba(77,232,192,0.2)',c:'#4de8c0',b:'rgba(77,232,192,0.4)',l:'Domestic'},
+  undergrad:{bg:'rgba(90,171,255,0.2)',c:'#5aabff',b:'rgba(90,171,255,0.4)',l:'Undergrad'},
+  postgrad:{bg:'rgba(255,140,90,0.2)',c:'#ff8c5a',b:'rgba(255,140,90,0.4)',l:'Postgrad'},
+  phd:{bg:'rgba(255,107,157,0.2)',c:'#ff6b9d',b:'rgba(255,107,157,0.4)',l:'PhD'},
+  trades:{bg:'rgba(255,224,102,0.2)',c:'#ffe066',b:'rgba(255,224,102,0.4)',l:'Trades'},
+  maori:{bg:'rgba(255,107,107,0.2)',c:'#ff6b6b',b:'rgba(255,107,107,0.4)',l:'Māori'},
+  pasifika:{bg:'rgba(255,169,77,0.2)',c:'#ffa94d',b:'rgba(255,169,77,0.4)',l:'Pasifika'},
+  asian:{bg:'rgba(116,192,252,0.2)',c:'#74c0fc',b:'rgba(116,192,252,0.4)',l:'Asian'},
+  open:{bg:'rgba(200,200,200,0.1)',c:'#999',b:'rgba(200,200,200,0.25)',l:'All Ethnicities'},
+  women:{bg:'rgba(247,131,172,0.2)',c:'#f783ac',b:'rgba(247,131,172,0.4)',l:'Women'},
+  'open-gender':{bg:'rgba(200,200,200,0.1)',c:'#888',b:'rgba(200,200,200,0.2)',l:'All Genders'},
+  stem:{bg:'rgba(105,219,124,0.2)',c:'#69db7c',b:'rgba(105,219,124,0.4)',l:'STEM'},
+  health:{bg:'rgba(56,217,169,0.2)',c:'#38d9a9',b:'rgba(56,217,169,0.4)',l:'Health'},
+  business:{bg:'rgba(252,196,25,0.2)',c:'#fcc419',b:'rgba(252,196,25,0.4)',l:'Business'},
+  law:{bg:'rgba(169,227,75,0.2)',c:'#a9e34b',b:'rgba(169,227,75,0.4)',l:'Law'},
+  arts:{bg:'rgba(218,119,242,0.2)',c:'#da77f2',b:'rgba(218,119,242,0.4)',l:'Arts'},
+  education:{bg:'rgba(77,171,247,0.2)',c:'#4dabf7',b:'rgba(77,171,247,0.4)',l:'Education'},
+  environment:{bg:'rgba(99,230,190,0.2)',c:'#63e6be',b:'rgba(99,230,190,0.4)',l:'Environment'},
+  'trades-field':{bg:'rgba(255,212,59,0.2)',c:'#ffd43b',b:'rgba(255,212,59,0.4)',l:'Trades'},
+  any:{bg:'rgba(180,180,180,0.1)',c:'#999',b:'rgba(180,180,180,0.2)',l:'Any Field'},
+  full:{bg:'rgba(81,207,102,0.2)',c:'#51cf66',b:'rgba(81,207,102,0.4)',l:'Fully Funded'},
+  partial:{bg:'rgba(148,216,45,0.2)',c:'#94d82d',b:'rgba(148,216,45,0.4)',l:'Partial'},
+  north:{bg:'rgba(163,224,90,0.2)',c:'#a3e05a',b:'rgba(163,224,90,0.4)',l:'North Island'},
+  south:{bg:'rgba(90,224,208,0.2)',c:'#5ae0d0',b:'rgba(90,224,208,0.4)',l:'South Island'},
+};
+const SHOW_TAGS=['maori','pasifika','asian','women','stem','health','business','law','arts','education','environment','trades-field','full','undergrad','postgrad','phd','trades','intl','domestic'];
+
+function tagH(tags,inline){
+  return(tags||[]).filter(t=>SHOW_TAGS.includes(t)).map(t=>{
+    const m=TM[t];if(!m)return'';
+    const s=inline?`font-size:0.6rem;font-weight:600;padding:1px 5px;border-radius:7px;margin:1px;display:inline-block;background:${m.bg};color:${m.c};border:1px solid ${m.b};`:``;
+    return inline?`<span style="${s}">${m.l}</span>`:`<span class="tag" style="background:${m.bg};color:${m.c};border:1px solid ${m.b};">${m.l}</span>`;
+  }).join('');
+}
+
+// MAP
+const map=L.map('map',{center:[-41.5,172.8],zoom:6,minZoom:5,maxBounds:[[-48,165],[-33,180]],maxBoundsViscosity:0.8});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19,crossOrigin:true}).addTo(map);
+map.on('click',e=>{pendingLL=e.latlng;openModal(e.latlng);});
+
+function makeIcon(t){const c={school:'#4dd08a',university:'#5aabff',company:'#ff8c5a',org:'#c97fff'}[t]||'#f5c842';return L.divIcon({className:'',html:`<div style="width:22px;height:22px;background:${c};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid white;box-shadow:0 3px 8px rgba(0,0,0,0.4);"></div>`,iconSize:[22,22],iconAnchor:[11,22],popupAnchor:[0,-24]});}
+
+function addMarker(s){
+  if(markers[s.id])return;
+  const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.type)}).addTo(map);
+  const tl={school:'🏫 School',university:'🎓 University',company:'🏢 Company',org:'🌐 Organisation'}[s.type];
+  const lnk=s.url?`<a href="${s.url}" target="_blank" style="color:#f5c842;font-size:0.76rem;">Visit Website →</a>`:'';
+  const ct=s.builtin?'':' <span style="font-size:0.6rem;background:rgba(245,200,66,0.2);color:#f5c842;border:1px solid rgba(245,200,66,0.4);padding:1px 5px;border-radius:7px;font-weight:700;">CUSTOM</span>';
+  m.bindPopup(`<div style="font-family:sans-serif;min-width:200px;max-width:270px;">
+    <div style="font-size:0.68rem;color:#7a9ab5;margin-bottom:3px;">${tl}${ct}</div>
+    <strong style="font-size:0.92rem;">${s.provider}</strong><br/>
+    <div style="font-size:0.8rem;color:#e8f0f8;margin:2px 0;">${s.name}</div>
+    ${s.amount?`<div style="color:#f5c842;font-weight:700;margin:3px 0;">${s.amount}</div>`:''}
+    ${(s.tags||[]).length?`<div style="margin:5px 0;">${tagH(s.tags,true)}</div>`:''}
+    ${s.desc?`<div style="font-size:0.73rem;color:#7a9ab5;margin-top:3px;line-height:1.5;">${s.desc}</div>`:''}
+    ${lnk?`<div style="margin-top:6px;">${lnk}</div>`:''}
+  </div>`,{maxWidth:290});
+  markers[s.id]=m;
+}
+
+function initMarkers(){allItems().forEach(addMarker);}
+
+function toggleFP(){
+  fpOpen=!fpOpen;
+  document.getElementById('filtersBody').classList.toggle('open',fpOpen);
+  document.getElementById('fchev').classList.toggle('open',fpOpen);
+}
+
+function buildChips(){
+  let tot=0;
+  Object.keys(FD).forEach(g=>{
+    const c=document.getElementById('chips-'+g);if(!c)return;
+    c.innerHTML='';
+    FD[g].forEach(d=>{
+      const on=activeFilters[g].includes(d.v);
+      if(on)tot++;
+      const b=document.createElement('button');
+      b.className=`chip c-${d.v}`+(on?' on':'');
+      b.textContent=d.label;
+      b.onclick=()=>toggleF(g,d.v);
+      c.appendChild(b);
+    });
+  });
+  const p=document.getElementById('activePill');
+  if(tot>0){p.textContent=tot+' active';p.classList.add('show');}else{p.classList.remove('show');}
+}
+
+function toggleF(g,v){
+  const a=activeFilters[g],i=a.indexOf(v);
+  if(i===-1)a.push(v);else a.splice(i,1);
+  buildChips();renderAll();
+}
+
+function clearFilters(){
+  Object.keys(activeFilters).forEach(k=>activeFilters[k]=[]);
+  document.getElementById('searchBox').value='';
+  buildChips();renderAll();
+}
+
+function passes(s){
+  const q=(document.getElementById('searchBox').value||'').toLowerCase();
+  if(q&&!(s.provider+s.name+(s.desc||'')+(s.amount||'')).toLowerCase().includes(q))return false;
+  const {category,level,eligibility,ethnicity,gender,field,funding,island}=activeFilters;
+  const t=s.tags||[];
+  if(category.length&&!category.includes(s.type))return false;
+  if(level.length&&!level.some(l=>t.includes(l)))return false;
+  if(eligibility.length&&!eligibility.some(e=>t.includes(e)))return false;
+  if(ethnicity.length&&!ethnicity.some(e=>t.includes(e)))return false;
+  if(gender.length&&!gender.some(g=>t.includes(g)))return false;
+  if(field.length&&!field.some(f=>t.includes(f)))return false;
+  if(funding.length&&!funding.some(f=>t.includes(f)))return false;
+  if(island.length&&!island.some(i=>t.includes(i)))return false;
+  return true;
+}
+
+function renderAll(){
+  buildChips();
+  const filtered=allItems().filter(passes);
+  document.getElementById('totalBadge').textContent=allItems().length;
+  document.getElementById('visibleCount').textContent=filtered.length;
+  allItems().forEach(s=>{
+    if(!markers[s.id])return;
+    const vis=filtered.some(f=>f.id===s.id);
+    if(vis&&!map.hasLayer(markers[s.id]))markers[s.id].addTo(map);
+    if(!vis&&map.hasLayer(markers[s.id]))map.removeLayer(markers[s.id]);
+  });
+  const cont=document.getElementById('sectionsScroll');cont.innerHTML='';
+  SECS.forEach(sec=>{
+    const items=filtered.filter(s=>s.type===sec.key);
+    const wrap=document.createElement('div');
+    const head=document.createElement('div');
+    head.className='sec-head';
+    head.innerHTML=`<div class="sec-left"><span style="font-size:.95rem;">${sec.emoji}</span><span class="sec-name" style="color:var(--${sec.key})">${sec.label}</span></div><div style="display:flex;align-items:center;gap:7px;"><span class="sec-cnt ${sec.key}">${items.length}</span><span class="sec-chev ${openSections[sec.key]?'open':''}">▶</span></div>`;
+    head.onclick=()=>{openSections[sec.key]=!openSections[sec.key];renderAll();};
+    const body=document.createElement('div');
+    body.className='sec-body'+(openSections[sec.key]?' open':'');
+    const cw=document.createElement('div');cw.className='cards-wrap';
+    if(items.length===0){
+      cw.innerHTML=`<div class="no-results">No ${sec.label.toLowerCase()} match your filters.</div>`;
+    }else{
+      items.forEach(s=>{
+        const card=document.createElement('div');card.className=`card ${s.type}`;card.onclick=()=>flyTo(s.id);
+        const cb=s.builtin?'':`<span class="tag" style="background:rgba(245,200,66,0.15);color:#f5c842;border:1px solid rgba(245,200,66,0.3);">CUSTOM</span>`;
+        card.innerHTML=`<div class="card-top"><div class="card-name">${s.provider}</div>${!s.builtin?`<button class="card-del" onclick="delCustom(event,'${s.id}')">✕</button>`:''}</div><div class="card-schname">${s.name}</div>${s.amount?`<div class="card-amount">${s.amount}</div>`:''}<div class="tags">${tagH(s.tags,false)}${cb}</div>${s.desc?`<div class="card-desc">${s.desc}</div>`:''}${s.url?`<a class="card-link" href="${s.url}" target="_blank" onclick="event.stopPropagation()">Visit Website →</a>`:''}<div class="card-loc">📍 ${s.lat.toFixed(3)}, ${s.lng.toFixed(3)}</div>`;
+        cw.appendChild(card);
+      });
+    }
+    const ab=document.createElement('button');ab.className='add-btn';ab.innerHTML=`+ Add ${sec.label.replace(/s$/,'')}`;ab.onclick=()=>{selType_=sec.key;openModalManual();};
+    cw.appendChild(ab);body.appendChild(cw);wrap.appendChild(head);wrap.appendChild(body);cont.appendChild(wrap);
+  });
+}
+
+function flyTo(id){
+  const s=allItems().find(x=>x.id===id);if(!s)return;
+  map.flyTo([s.lat,s.lng],11,{duration:1.2});
+  setTimeout(()=>{if(markers[id]){if(!map.hasLayer(markers[id]))markers[id].addTo(map);markers[id].openPopup();}},1300);
+}
+
+function delCustom(e,id){
+  e.stopPropagation();if(!confirm('Remove this custom scholarship?'))return;
+  custom=custom.filter(s=>s.id!==id);
+  if(markers[id]){map.removeLayer(markers[id]);delete markers[id];}
+  localStorage.setItem('nz_custom_v2',JSON.stringify(custom));
+  renderAll();showToast('Scholarship removed.');
+}
+
+function openModal(ll){document.getElementById('msub').textContent=`Pin location: ${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;resetForm();document.getElementById('overlay').classList.add('open');setTimeout(()=>document.getElementById('fProvider').focus(),200);}
+function openModalManual(){if(!pendingLL)pendingLL={lat:-41.2865,lng:174.7762};document.getElementById('msub').textContent=`Pin location: ${pendingLL.lat.toFixed(5)}, ${pendingLL.lng.toFixed(5)}`;resetForm();const idx={school:0,university:1,company:2,org:3}[selType_];document.querySelectorAll('.tbtn')[idx].classList.add('sel',selType_);document.getElementById('overlay').classList.add('open');setTimeout(()=>document.getElementById('fProvider').focus(),200);}
+function resetForm(){['fProvider','fName','fAmount','fDesc','fUrl'].forEach(id=>document.getElementById(id).value='');selType_='school';document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel','school','university','company','org'));document.querySelectorAll('.tbtn')[0].classList.add('sel','school');}
+function closeModal(){document.getElementById('overlay').classList.remove('open');pendingLL=null;}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function selType(t,btn){selType_=t;document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel','school','university','company','org'));btn.classList.add('sel',t);}
+function saveScholarship(){
+  const p=document.getElementById('fProvider').value.trim(),n=document.getElementById('fName').value.trim();
+  if(!p){alert('Please enter the provider name.');return;}
+  if(!n){alert('Please enter the scholarship name.');return;}
+  if(!pendingLL){alert('Please close this and click the map to set a location first.');return;}
+  const s={id:'c'+Date.now(),type:selType_,tags:['open','open-gender','any','partial'],provider:p,name:n,amount:document.getElementById('fAmount').value.trim(),desc:document.getElementById('fDesc').value.trim(),url:document.getElementById('fUrl').value.trim(),lat:pendingLL.lat,lng:pendingLL.lng,builtin:false};
+  custom.push(s);localStorage.setItem('nz_custom_v2',JSON.stringify(custom));addMarker(s);renderAll();closeModal();showToast('✅ Scholarship added!');setTimeout(()=>flyTo(s.id),200);
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+
+initMarkers();buildChips();renderAll();
+</script>
+</body>
+</html>
