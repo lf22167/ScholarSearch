@@ -704,25 +704,186 @@ footer {
   .feats-grid { grid-template-columns: 1fr 1fr; }
   .footer-top { grid-template-columns: 1fr 1fr; gap: 36px; }
 }
+
+/* ===== TABLET ===== */
 @media (max-width: 860px) {
-  #nav { padding: 0 24px; }
+  #nav { padding: 0 20px; }
   .nav-links { display: none; }
   .nav-hamburger { display: flex; }
-  .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; }
+  .hero { grid-template-columns: 1fr; padding: 100px 20px 60px; }
   .hero-right { display: none; }
-  .section, .section-sm { padding: 72px 24px; }
-  .search-band { padding: 64px 24px; }
+  .section, .section-sm { padding: 64px 20px; }
+  .search-band { padding: 56px 20px; }
   .map-wrap { grid-template-columns: 1fr; }
   .map-side { border-left: none; border-top: 1px solid var(--border); }
   .alumni-grid, .feats-grid { grid-template-columns: 1fr; }
   .blog-grid { grid-template-columns: 1fr; }
-  .ads-row { grid-template-columns: 1fr; padding: 0 24px 48px; }
-  .tutor-strip { padding: 48px 24px; }
-  .donate-section { padding: 72px 24px; }
+  .ads-row { grid-template-columns: 1fr; padding: 0 20px 48px; }
+  .tutor-strip { padding: 48px 20px; }
+  .donate-section { padding: 72px 20px; }
   .footer-top { grid-template-columns: 1fr 1fr; }
-  footer { padding: 52px 24px 28px; }
-  .partner-band { padding: 40px 24px; }
+  footer { padding: 52px 20px 28px; }
+  .partner-band { padding: 40px 20px; }
   .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== MOBILE NAV DRAWER ===== */
+.nav-mobile-menu {
+  display: none;
+  position: fixed;
+  top: 68px; left: 0; right: 0;
+  background: rgba(247,249,251,0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  z-index: 999;
+  padding: 16px 0 24px;
+  box-shadow: var(--shadow-md);
+}
+.nav-mobile-menu.open { display: block; }
+.nav-mobile-menu ul {
+  list-style: none;
+  display: flex; flex-direction: column;
+}
+.nav-mobile-menu ul li a {
+  display: block;
+  padding: 14px 24px;
+  font-size: 1rem; font-weight: 400;
+  color: var(--navy);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s, color 0.15s;
+}
+.nav-mobile-menu ul li a:hover,
+.nav-mobile-menu ul li a:active { background: var(--mist); color: var(--sky); }
+.nav-mobile-menu ul li:last-child a {
+  margin: 16px 20px 0;
+  border: none;
+  background: var(--navy); color: white;
+  border-radius: 40px; text-align: center;
+  padding: 14px 20px; font-weight: 500;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ===== MOBILE (≤480px) ===== */
+@media (max-width: 480px) {
+  html { font-size: 15px; }
+
+  /* Nav */
+  #nav { padding: 0 16px; height: 60px; }
+  .nav-logo { font-size: 1.25rem; }
+  .nav-mobile-menu { top: 60px; }
+
+  /* Hero */
+  .hero {
+    padding: 80px 16px 52px;
+    gap: 32px;
+  }
+  .hero h1 { font-size: clamp(2.4rem, 10vw, 3.2rem); margin-bottom: 20px; }
+  .hero-desc { font-size: 0.95rem; margin-bottom: 32px; }
+  .hero-actions { flex-direction: column; gap: 10px; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-outline {
+    width: 100%; justify-content: center;
+    padding: 15px 20px; font-size: 0.95rem;
+  }
+  .hero-trust { gap: 12px; flex-wrap: wrap; justify-content: center; padding-top: 24px; margin-top: 24px; }
+  .hero-trust-num { font-size: 1.4rem; }
+  .hero-eyebrow { font-size: 0.7rem; padding: 6px 14px; margin-bottom: 24px; }
+
+  /* Sections */
+  .section, .section-sm { padding: 52px 16px; }
+  h2.section-title { font-size: clamp(1.7rem, 7vw, 2.2rem); }
+  .section-desc { font-size: 0.93rem; }
+
+  /* Search band */
+  .search-band { padding: 48px 16px; }
+  .search-form {
+    flex-direction: column; gap: 0;
+    padding: 4px; border-radius: var(--r-md);
+  }
+  .search-input { padding: 14px 16px; font-size: 1rem; border-radius: 10px 10px 0 0; }
+  .search-divider { display: none; }
+  .search-select {
+    border-radius: 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    min-width: unset; width: 100%;
+    padding: 13px 16px;
+  }
+  .search-go {
+    border-radius: 0 0 10px 10px;
+    padding: 14px 20px;
+    font-size: 0.95rem;
+  }
+  .filter-pills { gap: 6px; }
+  .pill { padding: 7px 14px; font-size: 0.8rem; }
+
+  /* Cards */
+  .cards-grid { grid-template-columns: 1fr; gap: 16px; }
+  .s-card-body { padding: 20px 18px; }
+  .s-card-foot { padding: 12px 18px; }
+  .s-card-amount { font-size: 1.4rem; }
+  .s-card-title { font-size: 1.05rem; }
+  .cards-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* Map */
+  .map-canvas { padding: 16px; }
+  .map-canvas svg { max-height: 320px; }
+  .map-side { padding: 24px 16px; }
+  .region-btn { padding: 12px 12px; }
+
+  /* Features */
+  .feats-grid { gap: 14px; }
+  .feat { padding: 26px 22px; }
+  .feat-icon { width: 44px; height: 44px; font-size: 1.3rem; margin-bottom: 16px; }
+
+  /* Alumni */
+  .alumni-grid { gap: 14px; margin-top: 36px; }
+  .alumni-card { padding: 24px 20px; }
+  .alumni-quote { font-size: 1rem; }
+
+  /* Blog */
+  .blog-grid { gap: 14px; }
+  .blog-top { margin-bottom: 32px; }
+  .blog-body { padding: 18px 18px; }
+  .blog-card:nth-child(1) .blog-thumb { height: 160px; }
+
+  /* Tutor strip */
+  .tutor-strip {
+    flex-direction: column; align-items: flex-start;
+    padding: 40px 16px; gap: 24px;
+  }
+  .tutor-strip-text h3 { font-size: 1.5rem; }
+  .tutor-strip .btn-primary { width: 100%; justify-content: center; }
+
+  /* Donate */
+  .donate-section { padding: 60px 16px; }
+  .donate-amounts { gap: 8px; }
+  .d-amt { padding: 10px 18px; font-size: 0.88rem; }
+  .donate-btn { padding: 15px 32px; font-size: 0.95rem; width: 100%; justify-content: center; }
+
+  /* Partners */
+  .partner-band { padding: 36px 16px; }
+  .pb-logos { gap: 10px; }
+  .pb-logo { padding: 10px 16px; font-size: 0.75rem; }
+
+  /* Ads */
+  .ads-row { padding: 0 16px 40px; gap: 14px; }
+
+  /* Footer */
+  footer { padding: 44px 16px 24px; }
+  .footer-top {
+    grid-template-columns: 1fr;
+    gap: 32px; margin-bottom: 36px; padding-bottom: 36px;
+  }
+  .footer-brand p { max-width: 100%; }
+  .footer-bottom { flex-direction: column; text-align: center; gap: 6px; }
+
+  /* Toast */
+  .toast { bottom: 16px; right: 16px; left: 16px; max-width: unset; }
+
+  /* Hero trust bar — hide dividers on very small screens */
+  .hero-trust-divider { display: none; }
 }
 </style>
 </head>
@@ -743,10 +904,23 @@ footer {
     <li><a href="#donate">Support Us</a></li>
     <li><a href="#" class="nav-btn">Get Alerts</a></li>
   </ul>
-  <div class="nav-hamburger" onclick="this.classList.toggle('open')">
+  <div class="nav-hamburger" id="hamburger">
     <span></span><span></span><span></span>
   </div>
 </nav>
+
+<!-- Mobile Nav Drawer -->
+<div class="nav-mobile-menu" id="mobileMenu">
+  <ul>
+    <li><a href="#scholarships" onclick="closeMobileMenu()">Scholarships</a></li>
+    <li><a href="#map" onclick="closeMobileMenu()">Map</a></li>
+    <li><a href="#tutors" onclick="closeMobileMenu()">Tutors</a></li>
+    <li><a href="#alumni" onclick="closeMobileMenu()">Alumni</a></li>
+    <li><a href="#blog" onclick="closeMobileMenu()">Blog</a></li>
+    <li><a href="#donate" onclick="closeMobileMenu()">Support Us</a></li>
+    <li><a href="#" onclick="closeMobileMenu()">Get Alerts</a></li>
+  </ul>
+</div>
 
 <!-- ========== HERO ========== -->
 <section class="hero" id="home">
@@ -1418,6 +1592,31 @@ footer {
   /* Nav shadow on scroll */
   window.addEventListener('scroll', () => {
     document.getElementById('nav').classList.toggle('shadow', window.scrollY > 20);
+  });
+
+  /* Hamburger menu */
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('open');
+    mobileMenu.classList.toggle('open');
+    document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+  });
+
+  function closeMobileMenu() {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* Close menu on outside tap */
+  document.addEventListener('click', (e) => {
+    if (mobileMenu.classList.contains('open') &&
+        !mobileMenu.contains(e.target) &&
+        !hamburger.contains(e.target)) {
+      closeMobileMenu();
+    }
   });
 
   /* Map tooltip */
